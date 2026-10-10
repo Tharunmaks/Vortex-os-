@@ -56,5 +56,7 @@ module.exports = {
     maxRedirects: 5,
     // Never set this in production: it lets the browser reach internal networks.
     allowPrivate: env.VORTEX_BROWSER_ALLOW_PRIVATE === '1',
+    // Optional http://host:port proxy for networks without direct internet access (CONNECT tunnels).
+    upstreamProxy: env.VORTEX_UPSTREAM_PROXY || '',
   },
 };

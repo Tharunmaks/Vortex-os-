@@ -10,6 +10,7 @@
 const dns = require('dns');
 const http = require('http');
 const https = require('https');
+const tls = require('tls');
 const net = require('net');
 const zlib = require('zlib');
 const config = require('./config');
@@ -93,32 +94,76 @@ function safeLookup(hostname, options, callback) {
   });
 }
 
-function requestOnce(u, accept) {
+/** Resolve + vet a host without connecting (used before tunnelling through an upstream proxy). */
+function vetHost(hostname) {
+  return new Promise((resolve, reject) => {
+    if (net.isIP(hostname)) return resolve();
+    safeLookup(hostname, { all: true }, (err) => (err ? reject(err) : resolve()));
+    return undefined;
+  });
+}
+
+/** Open a CONNECT tunnel through VORTEX_UPSTREAM_PROXY (for networks that require one). */
+function tunnel(u) {
+  return new Promise((resolve, reject) => {
+    const p = new URL(config.browser.upstreamProxy);
+    const port = u.port || (u.protocol === 'https:' ? 443 : 80);
+    const target = `${u.hostname}:${port}`;
+    const req = http.request({ host: p.hostname, port: p.port || 80, method: 'CONNECT', path: target, headers: { Host: target }, timeout: config.browser.timeoutMs });
+    req.on('connect', (res, socket) => {
+      // The tunnel may be reset after the exchange has finished; never let that crash the hive.
+      socket.on('error', () => {});
+      if (res.statusCode !== 200) {
+        socket.destroy();
+        reject(new BrowseError(`The upstream proxy refused ${u.hostname} (${res.statusCode})`, 502));
+      } else resolve(socket);
+    });
+    req.on('timeout', () => req.destroy(new BrowseError('The upstream proxy took too long', 504)));
+    req.on('error', (err) => reject(err instanceof BrowseError ? err : new BrowseError(`Upstream proxy unreachable (${err.code || err.message})`, 502)));
+    req.end();
+  });
+}
+
+function requestOnce(u, accept, extraHeaders = {}) {
   return new Promise((resolve, reject) => {
     const mod = u.protocol === 'https:' ? https : http;
-    const req = mod.request(
-      u,
-      {
-        method: 'GET',
-        lookup: safeLookup,
-        timeout: config.browser.timeoutMs,
-        headers: {
-          'User-Agent': UA,
-          Accept: accept,
-          'Accept-Language': 'en-US,en;q=0.8',
-          'Accept-Encoding': 'gzip, deflate, br',
-        },
+    const opts = {
+      method: 'GET',
+      lookup: safeLookup,
+      timeout: config.browser.timeoutMs,
+      headers: {
+        'User-Agent': UA,
+        Accept: accept,
+        'Accept-Language': 'en-US,en;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
+        ...extraHeaders,
       },
-      (res) => resolve(res),
-    );
-    req.on('timeout', () => req.destroy(new BrowseError('The site took too long to answer', 504)));
-    req.on('error', (err) => {
+    };
+    const fail = (err) => {
       if (err instanceof BrowseError) return reject(err);
       if (err.code === 'EPRIVATE') return reject(new BrowseError('That host points at a private network — blocked', 403));
       if (err.code === 'ENOTFOUND') return reject(new BrowseError('Site not found', 502));
-      reject(new BrowseError(`Could not reach the site (${err.code || err.message})`, 502));
-    });
-    req.end();
+      return reject(new BrowseError(`Could not reach the site (${err.code || err.message})`, 502));
+    };
+    const start = (socket) => {
+      if (socket) {
+        opts.agent = false;
+        opts.createConnection = () => {
+          if (u.protocol !== 'https:') return socket;
+          const t = tls.connect({ socket, servername: u.hostname });
+          t.on('error', () => {}); // surfaced through the request's own 'error' event
+          return t;
+        };
+      }
+      const req = mod.request(u, opts, (res) => resolve(res));
+      req.on('timeout', () => req.destroy(new BrowseError('The site took too long to answer', 504)));
+      req.on('error', fail);
+      req.end();
+    };
+    if (config.browser.upstreamProxy) {
+      // The address is vetted locally first, then reached through the proxy's tunnel.
+      vetHost(u.hostname).then(() => tunnel(u)).then(start, fail);
+    } else start(null);
   });
 }
 
@@ -149,10 +194,10 @@ function collect(stream, limit) {
 }
 
 /** Fetch with manually-followed, re-validated redirects. */
-async function safeFetch(raw, accept = '*/*') {
+async function safeFetch(raw, accept = '*/*', headers = {}) {
   let u = checkUrl(raw);
   for (let hop = 0; hop <= config.browser.maxRedirects; hop++) {
-    const res = await requestOnce(u, accept);
+    const res = await requestOnce(u, accept, headers);
     if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
       res.resume();
       u = checkUrl(new URL(res.headers.location, u).href);

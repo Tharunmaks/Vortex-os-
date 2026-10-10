@@ -40,8 +40,21 @@ Vortex Browser does not wrap Chrome, WebKit or an iframe. Every stage is code in
 It has tabs, back/forward, bookmarks, history, zoom, `#fragment` links and GET forms. Typing in a
 form uses a real input laid over the canvas, so pages never touch it.
 
-**Search:** there is no third-party search engine. Typing words in the address bar searches the pages
-you have visited and bookmarked (an index kept in your own browser). Type a web address to go somewhere new.
+**Vortex Search:** type anything in the address bar or on the start page. The hive's search
+service (`server/search.js`) asks **DuckDuckGo, Bing and Wikipedia** in parallel, merges the
+results (links that several engines agree on rank first) and builds an answer card:
+
+| You type | You get |
+| --- | --- |
+| `who invented the telephone` | The Wikipedia summary of the article the web ranks highest (Alexander Graham Bell) |
+| `how tall is mount everest` | The best snippet that contains the number (29,032 ft / 8,849 m) |
+| `weather in Tokyo` | Live weather from Open-Meteo |
+| `time in Sydney` | The current local time there |
+| `define serendipity` | A Wiktionary definition |
+| `12*(3+4)` | `= 84`, calculated locally |
+
+If an engine is down or asks for a robot check, the others still answer, and the page says which
+sources were unavailable. Your own history and bookmarks also appear under "From your history".
 
 **Limits, stated honestly:** there is no JavaScript, so pages that need scripts to show content
 look empty. There is no video, audio, web fonts, animation or positioned layers, and no text
@@ -132,7 +145,8 @@ this in the **Hive Control** app too.
 | `VORTEX_TERMINAL_IDLE_MIN` | `60` | Idle terminals are closed after this many minutes |
 | `VORTEX_QUOTA_MB` / `VORTEX_MAX_UPLOAD_MB` | `1024` / `50` | Storage limits per bee |
 | `VORTEX_HIVE_GUARD` | `1` | Set to `0` to turn off the shell guard (not recommended) |
-| `VORTEX_BROWSER` | `1` | Set to `0` to turn off the Browser app |
+| `VORTEX_BROWSER` | `1` | Set to `0` to turn off the Browser app and Vortex Search |
+| `VORTEX_UPSTREAM_PROXY` | – | `http://host:port` proxy for networks without direct internet access (CONNECT tunnels) |
 
 ## Security
 

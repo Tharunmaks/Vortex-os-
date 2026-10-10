@@ -9,9 +9,22 @@ import { Page } from '../engine/page.js';
 import { Viewport } from '../engine/viewport.js';
 import { Store } from '../browser/store.js';
 import * as pages from '../browser/internal.js';
+import { evaluate } from './calculator.js';
 
 const MAX_TABS = 12;
 const ZOOMS = [0.5, 0.67, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3];
+
+/** A maths query answered locally (12*(3+4), 2^10, …). */
+function mathAnswer(q) {
+  const expr = q.replace(/\s+/g, '').replace(/[x×]/g, '*').replace(/÷/g, '/').replace(/=$/, '');
+  if (!/^[-+*/%^().\d]+$/.test(expr) || !/\d/.test(expr) || !/[-+*/%^]/.test(expr.slice(1))) return null;
+  try {
+    const v = evaluate(expr);
+    return { kind: 'math', big: `= ${v.toLocaleString('en-US', { maximumFractionDigits: 10 })}`, text: q.trim(), source: 'Vortex calculator' };
+  } catch {
+    return null;
+  }
+}
 
 export function resolveInput(raw) {
   const v = String(raw).trim();
@@ -45,7 +58,7 @@ export default {
     const fwd = h('button.btn.icon', { title: 'Forward (Alt+→)', 'aria-label': 'Forward', html: icons.fwd });
     const reload = h('button.btn.icon', { title: 'Reload (F5)', 'aria-label': 'Reload', html: icons.reload });
     const home = h('button.btn.icon', { title: 'Start page', 'aria-label': 'Start page', html: icons.home });
-    const address = h('input.grow', { type: 'text', spellcheck: 'false', autocomplete: 'off', 'aria-label': 'Address', placeholder: 'Search your history or enter a web address' });
+    const address = h('input.grow', { type: 'text', spellcheck: 'false', autocomplete: 'off', 'aria-label': 'Address', placeholder: 'Search anything or enter a web address' });
     const star = h('button.btn.icon', { title: 'Bookmark this page', 'aria-label': 'Bookmark' }, '☆');
     const menuBtn = h('button.btn.icon', { title: 'Menu', 'aria-label': 'Menu' }, '⋯');
     const pill = h('span.secure-pill', { title: 'Own engine · no scripts · proxied · private networks blocked' }, '🛡️ Vortex Engine');
@@ -134,7 +147,6 @@ export default {
       const name = u.replace(/^vortex:\/\//i, '').split(/[?#]/)[0].replace(/\/$/, '');
       switch (name) {
         case 'home': return pages.home(os.user.username, store);
-        case 'search': return pages.results(url2.searchParams.get('q') || '', store);
         case 'history': return pages.history(store);
         case 'bookmarks': return pages.bookmarks(store);
         case 'about': return pages.about(os.version);
@@ -160,7 +172,19 @@ export default {
       let finalUrl = target;
       let record = false;
       try {
-        if (target.startsWith('vortex://')) {
+        if (/^vortex:\/\/search\b/i.test(target)) {
+          const q = new URL(target.replace(/^vortex:\/\//i, 'http://vortex.internal/')).searchParams.get('q') || '';
+          let web = null;
+          if (q.trim()) {
+            try {
+              web = await api(`/api/search?q=${encodeURIComponent(q)}`, { signal: ac.signal });
+            } catch (err) {
+              if (err.name === 'AbortError') throw err;
+              web = { error: err.message, results: [], answer: null, sources: [] };
+            }
+          }
+          html = pages.results(q, store, web, mathAnswer(q));
+        } else if (target.startsWith('vortex://')) {
           html = internalHtml(target);
         } else {
           const res = await api(`/api/browser/page?url=${encodeURIComponent(target)}`, { signal: ac.signal });

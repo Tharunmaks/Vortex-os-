@@ -85,6 +85,8 @@ engine that has no JavaScript runtime at all:
 - Form controls shown on a page are real inputs created by Vortex itself; the page's markup can only set their label, placeholder and initial value as text.
 - Proxied sub-resources are served with `Content-Security-Policy: sandbox; default-src 'none'`, so opening one directly can't run script on the Vortex site.
 - Built-in `vortex://` pages escape every value (history titles and URLs come from websites).
+- **Vortex Search** queries public sources (DuckDuckGo, Bing, Wikipedia, Wiktionary, Open-Meteo) through the same SSRF-safe fetcher, so a search never reaches internal networks either. Result pages are parsed on the server and only titles, links and snippets go to the bee as escaped text. Queries are rate-limited per bee and recorded in the audit log as `browser.search`; they are sent to those third-party services, so bees should not search for secrets.
+- With `VORTEX_UPSTREAM_PROXY` set, every host is still resolved and checked against the blocked ranges before it is reached through the proxy's CONNECT tunnel. The proxy resolves the name again itself, so the DNS-rebinding guarantee becomes "checked, then trusted to the proxy"; only use a proxy you control.
 
 ## 6. HTTP hardening
 

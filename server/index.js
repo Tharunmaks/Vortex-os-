@@ -10,6 +10,7 @@ const audit = require('./audit');
 const files = require('./files');
 const system = require('./system');
 const browser = require('./browser');
+const webSearch = require('./search');
 const terminal = require('./terminal');
 const { Auth, ROLES, generatePassword } = require('./auth');
 const { securityHeaders, sendJson, readJson, parseCookies, clientIp, originAllowed, HttpError } = require('./http-util');
@@ -219,6 +220,16 @@ function createServer(auth = new Auth()) {
         if (err.status === 403) audit.log('browser.blocked', { user: ctx.user.username, url: String(target).slice(0, 500), reason: err.message }, 'warn');
         throw err;
       }
+    },
+    'GET /api/search': async (req, ctx, url) => {
+      need(ctx);
+      if (!config.browser.enabled) throw new HttpError(403, 'The hive browser is disabled');
+      if (!browserBucket.take(ctx.user.username)) throw new HttpError(429, 'Slow down, busy bee');
+      const q = (url.searchParams.get('q') || '').trim();
+      if (!q) throw new HttpError(400, 'Type something to search for');
+      const result = await webSearch.search(q);
+      audit.log('browser.search', { user: ctx.user.username, q: q.slice(0, 200), results: result.results.length });
+      return result;
     },
     'GET /api/browser/asset': async (req, ctx, url, res) => {
       need(ctx);
