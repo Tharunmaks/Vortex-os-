@@ -67,6 +67,19 @@ npm test                        # unit + integration tests
 
 `deploy/vortex-os.service` is a sandboxed systemd unit for running Vortex directly on a Linux host.
 
+## Running on Android (Termux)
+
+Docker isn't available in Termux, so run Vortex directly. This gives you no container isolation, so keep it on `127.0.0.1` and don't expose it.
+
+```bash
+pkg install nodejs git python make clang binutils bash
+git clone -b claude/vortex-os-mnx-hive-dmboh8 https://github.com/Tharunmaks/Vortex-os-.git
+cd Vortex-os- && npm install
+VORTEX_SHELL=$PREFIX/bin/bash VORTEX_SHELL_PATH=$PATH npm start
+```
+
+Then open http://127.0.0.1:8420 in your phone's browser. The one-time queen password is printed in the Termux output. `npm install` compiles the terminal component (`node-pty`), which can fail on some Android setups.
+
 ## Managing the hive from the shell
 
 ```bash

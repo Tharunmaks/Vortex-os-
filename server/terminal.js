@@ -37,7 +37,7 @@ function shellEnv(user) {
     TERM: 'xterm-256color',
     COLORTERM: 'truecolor',
     LANG: process.env.LANG || 'C.UTF-8',
-    PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
+    PATH: config.terminal.path,
     HIVE_ROLE: user.role,
     HIVE_NAME: config.hiveName,
     VORTEX_OS: config.version,

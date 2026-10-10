@@ -36,6 +36,8 @@ module.exports = {
 
   terminal: {
     shell: env.VORTEX_SHELL || '/bin/bash',
+    // PATH given to bee shells. Override on hosts without /usr/bin (e.g. Termux).
+    path: env.VORTEX_SHELL_PATH || '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
     maxPerBee: int(env.VORTEX_MAX_TERMINALS, 4),
     idleMs: int(env.VORTEX_TERMINAL_IDLE_MIN, 60) * 60_000,
     guard: env.VORTEX_HIVE_GUARD !== '0',
