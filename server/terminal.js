@@ -1,6 +1,5 @@
 'use strict';
 const path = require('path');
-const pty = require('node-pty');
 const config = require('./config');
 const audit = require('./audit');
 const { homeOf } = require('./files');
@@ -52,11 +51,33 @@ function shellEnv(user) {
  *   client → server  {t:'i', d:'keystrokes'} | {t:'r', c:cols, r:rows}
  *   server → client  {t:'o', d:'output'} | {t:'x', code} | {t:'e', m:'error'}
  */
+/**
+ * node-pty is a native module. It doesn't build on every platform (e.g. Termux),
+ * so load it lazily: the rest of Vortex OS still runs without a terminal.
+ */
+let pty = null;
+let ptyError = null;
+function loadPty() {
+  if (pty || ptyError) return pty;
+  try {
+    pty = require('node-pty');
+  } catch (err) {
+    ptyError = err;
+  }
+  return pty;
+}
+
 function attach(ws, auth) {
   const { user } = auth;
   const send = (msg) => {
     if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(msg));
   };
+
+  if (!loadPty()) {
+    send({ t: 'e', m: 'The terminal is unavailable on this host (native module node-pty did not load).' });
+    ws.close(1011, 'no pty');
+    return;
+  }
 
   if (forUser(user.username).length >= config.terminal.maxPerBee) {
     send({ t: 'e', m: `Terminal limit reached (${config.terminal.maxPerBee} per bee). Close one first.` });
