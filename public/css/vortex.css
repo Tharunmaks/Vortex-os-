@@ -357,3 +357,21 @@ table.data td.num, table.data th.num { text-align: right; font-variant-numeric: 
 .btn svg, .crumbs svg { width: 16px; height: 16px; display: block; }
 .btn.small svg { width: 14px; height: 14px; }
 .chip:empty { display: none; }
+
+/* ── Vortex Browser ───────────────────────────────────────────────────────── */
+.vb-tabs { display: flex; gap: 2px; padding: 6px 8px 0; background: var(--surface-2); border-bottom: 1px solid var(--line); overflow-x: auto; flex: none; }
+.vb-tab { display: flex; align-items: center; gap: 4px; min-width: 110px; max-width: 200px; padding: 6px 4px 6px 10px; border-radius: 8px 8px 0 0; cursor: pointer; font-size: 12px; color: var(--muted); }
+.vb-tab:hover { background: var(--surface-3); }
+.vb-tab.active { background: var(--surface-solid); color: var(--text); font-weight: 600; box-shadow: inset 0 2px 0 var(--accent); }
+.vb-tab-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vb-tab-x, .vb-newtab { border: 0; background: none; cursor: pointer; border-radius: 6px; width: 22px; height: 22px; color: var(--muted); font-size: 15px; line-height: 1; flex: none; }
+.vb-tab-x:hover, .vb-newtab:hover { background: var(--surface-3); color: var(--text); }
+.vb-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; background: #fff; }
+.vb-canvas { display: block; outline: none; touch-action: none; }
+.vb-overlay { position: absolute; left: 0; top: 0; overflow: hidden; pointer-events: none; }
+.vb-inner { position: absolute; left: 0; top: 0; width: 100%; will-change: transform; }
+.vb-overlay .vb-ctl { position: absolute; pointer-events: auto; box-sizing: border-box; margin: 0; background: #fff; color: #111; border: 1px solid #767676; border-radius: 3px; padding: 2px 6px; font-family: system-ui, sans-serif; }
+.vb-overlay .vb-ctl[type='checkbox'], .vb-overlay .vb-ctl[type='radio'] { padding: 0; accent-color: var(--accent); }
+.vb-status { position: absolute; left: 0; bottom: 0; max-width: 70%; padding: 2px 10px; font-size: 12px; background: var(--surface-solid); color: var(--text); border: 1px solid var(--line); border-radius: 0 8px 0 0; opacity: 0; transition: opacity 0.1s; pointer-events: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vb-status.show { opacity: 1; }
+.vb-menu { position: absolute; top: 76px; right: 8px; }

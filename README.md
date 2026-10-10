@@ -16,13 +16,36 @@ Hive Control panel. Several layers of security protect it.
 | 💻 **Terminal** | A real `bash` shell on a real PTY (xterm.js over WebSocket), running in the bee's home folder. The **Hive Guard** watches it. |
 | 📁 **Files** | Browse, upload (drag-and-drop works), download, rename, delete and create files and folders, with a storage quota. |
 | 📝 **Editor** | A text and code editor. Ctrl+S saves, Tab indents, and long lines can wrap. |
-| 🌐 **Browser** | A web browser that loads every page through the hive proxy. Scripts never run, and private or cloud-metadata networks can't be reached. |
+| 🌐 **Browser** | **Vortex Browser**, a web browser written from scratch: its own HTML parser, CSS engine, layout and renderer, with tabs, history, bookmarks and a local search. Every page is fetched by the hive proxy. |
 | 📈 **Monitor** | Live CPU, memory and disk graphs plus a process list, read from `/proc`. Bees can end processes they started. |
 | 🛡️ **Hive Control** | Queens manage bees, roles, sessions and terminals and read the audit log. Other bees see their own permissions. |
 | 🧮 **Calculator** | Quick maths. It parses expressions safely and never uses `eval`. |
 | ⚙️ **Settings** | Theme, accent colour, wallpapers, clock and password. |
 
 Keyboard shortcuts: **Alt+T** opens a terminal and **Alt+Space** opens the app launcher. Double-clicking a title bar maximises the window.
+
+## Vortex Browser
+
+Vortex Browser does not wrap Chrome, WebKit or an iframe. Every stage is code in this repository
+(`public/js/engine/`):
+
+| Stage | What it does |
+| --- | --- |
+| Network | The hive proxy (`server/browser.js`) fetches the page, blocks private networks and strips scripts |
+| `html.js` | Tokenizer and tree builder: entities, void and raw-text elements, implied end tags |
+| `css.js` | Selectors and specificity, the cascade, `var()`, `calc()`, `min/max/clamp`, media queries, shorthands |
+| `layout.js` | Block flow with margin collapsing, inline line-breaking, tables, flexbox, grid, lists, images |
+| `viewport.js` | Paints to a `<canvas>`, with scrolling, zoom, touch and link/button hit-testing |
+
+It has tabs, back/forward, bookmarks, history, zoom, `#fragment` links and GET forms. Typing in a
+form uses a real input laid over the canvas, so pages never touch it.
+
+**Search:** there is no third-party search engine. Typing words in the address bar searches the pages
+you have visited and bookmarked (an index kept in your own browser). Type a web address to go somewhere new.
+
+**Limits, stated honestly:** there is no JavaScript, so pages that need scripts to show content
+look empty. There is no video, audio, web fonts, animation or positioned layers, and no text
+selection or find-in-page yet. Static, content-heavy pages render well.
 
 ## Bee roles
 

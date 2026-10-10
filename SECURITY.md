@@ -73,15 +73,18 @@ the sandbox.
 ## 5. Browser (SSRF and XSS)
 
 The bee's own browser never contacts websites directly. `server/browser.js` fetches pages and
-sub-resources for it:
+sub-resources for it, and the page is then rendered by **Vortex Engine**, a from-scratch HTML/CSS
+engine that has no JavaScript runtime at all:
 
 - Only `http` and `https` are allowed, on ports 80, 443, 8080 or 8443, and URLs with embedded credentials are rejected.
 - Host names like `localhost`, `*.local`, `*.internal` and `metadata.google.internal` are refused.
 - **The DNS answer is pinned.** A custom `lookup` refuses any answer in a blocked range: RFC 1918, loopback, link-local (including `169.254.169.254`), CGNAT, multicast, reserved ranges, IPv6 ULA and link-local, and IPv4 addresses embedded in IPv6 (`::ffff:`, `64:ff9b::`). The connection then uses the address that was checked, so DNS rebinding doesn't work.
 - Redirects are followed by hand, and each hop is checked again. The proxy enforces a 5-redirect limit, a 5 MB size limit, a 15-second timeout and per-bee rate limits.
 - HTML is stripped of `<script>`, `<iframe>`, `<object>`, event handlers, `javascript:` URLs, meta refresh and `<base>`. Images, CSS and fonts are rewritten so they also load through the proxy.
-- The page renders in an `<iframe sandbox="allow-same-origin">` (with no `allow-scripts`, no forms and no popups), and the Vortex CSP (`script-src 'self'`) applies inside it as well. So scripts can't run even if one gets past the sanitiser.
+- **There is no DOM and no script engine to attack.** The page is parsed into a private tree, laid out and drawn onto a `<canvas>`. Page content is never inserted into the Vortex document as HTML, and there is no iframe, so there is no markup path from a website into the desktop. The proxy's sanitising is a second layer, not the only one.
+- Form controls shown on a page are real inputs created by Vortex itself; the page's markup can only set their label, placeholder and initial value as text.
 - Proxied sub-resources are served with `Content-Security-Policy: sandbox; default-src 'none'`, so opening one directly can't run script on the Vortex site.
+- Built-in `vortex://` pages escape every value (history titles and URLs come from websites).
 
 ## 6. HTTP hardening
 

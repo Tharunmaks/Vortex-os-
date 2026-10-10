@@ -48,6 +48,7 @@ export function h(sel, attrs = {}, ...kids) {
     if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2).toLowerCase(), v);
     else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
     else if (k === 'dataset') Object.assign(el.dataset, v);
+    else if (k === 'class') el.classList.add(...String(v).split(/\s+/).filter(Boolean));
     else if (k === 'html') el.innerHTML = v; // only ever used with trusted, static markup (icons)
     else if (v === true) el.setAttribute(k, '');
     else el.setAttribute(k, v);
