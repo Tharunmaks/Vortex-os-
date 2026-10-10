@@ -1,0 +1,22 @@
+{
+  "name": "vortex-os",
+  "version": "1.0.0",
+  "description": "Vortex OS — a secure cloud Linux desktop for the MNX Hive bees: real bash terminal, files, editor, sandboxed browser, system monitor and hive control.",
+  "main": "server/index.js",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "admin": "node bin/vortex-admin.js",
+    "test": "node --test \"test/*.test.js\" \"test/*.test.mjs\""
+  },
+  "dependencies": {
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/xterm": "^5.5.0",
+    "node-pty": "^1.1.0",
+    "ws": "^8.18.0"
+  }
+}

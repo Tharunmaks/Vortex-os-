@@ -1,0 +1,7 @@
+# HTTPS front door for Vortex OS. Start with:
+#   VORTEX_DOMAIN=hive.example.com VORTEX_SECURE_COOKIES=1 VORTEX_TRUST_PROXY=1 \
+#     docker compose --profile https up -d
+{$VORTEX_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy vortex:8420
+}
